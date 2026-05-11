@@ -14,6 +14,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+app.get('/api/health', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ success: true, database: 'connected' });
+  } catch (_error) {
+    res.status(500).json({ success: false, database: 'disconnected' });
+  }
+});
+
 function validateSubmission(input) {
   const required = [
     'first_name',
@@ -141,6 +150,18 @@ app.delete('/api/submissions/:id', async (req, res) => {
   }
 });
 
-app.listen(config.port, () => {
-  console.log(`Manager app running at http://localhost:${config.port}`);
-});
+async function start() {
+  try {
+    await pool.query('SELECT 1');
+    console.log('Database connection successful.');
+    app.listen(config.port, () => {
+      console.log(`Manager app running at http://localhost:${config.port}`);
+    });
+  } catch (error) {
+    console.error('Failed to connect to database. Check DATABASE_URL in manager/.env');
+    console.error(error.message);
+    process.exit(1);
+  }
+}
+
+start();
