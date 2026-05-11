@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Submission Manager</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Submission Manager</h1>
+    <p class="subtitle">Manage your onboarding submissions in one place.</p>
+
+    <section class="panel">
+      <h2 id="formTitle">Add Submission</h2>
+      <form id="submissionForm">
+        <input type="hidden" id="submissionId" />
+        <div class="grid">
+          <input id="first_name" placeholder="First name" required />
+          <input id="last_name" placeholder="Last name" required />
+          <input id="other_names" placeholder="Other names" />
+          <input id="email" type="email" placeholder="Email" required />
+          <input id="phone_number" placeholder="Phone number" required />
+          <input id="training_interest" placeholder="Training interest" required />
+          <input id="learning_device" placeholder="Learning device" required />
+        </div>
+        <div class="row">
+          <label><input id="whatsapp_consent" type="checkbox" checked /> WhatsApp Consent</label>
+          <label><input id="schedule_email_consent" type="checkbox" checked /> Schedule Email Consent</label>
+        </div>
+        <div class="row">
+          <button type="submit" class="primary">Save</button>
+          <button type="button" id="cancelEdit">Cancel Edit</button>
+          <button type="button" id="refreshBtn">Refresh</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Submissions</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Interest</th>
+              <th>Device</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <p id="emptyState" class="empty hidden">No records found.</p>
+    </section>
+  </main>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
