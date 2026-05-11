@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -10,6 +10,14 @@
   <main class="container">
     <h1>Submission Manager</h1>
     <p class="subtitle">Manage your onboarding submissions in one place.</p>
+
+    <section class="panel">
+      <h2>Admin Access</h2>
+      <div class="row">
+        <input id="adminPassword" type="password" placeholder="Admin password" />
+        <button type="button" id="savePasswordBtn">Save Password</button>
+      </div>
+    </section>
 
     <section class="panel">
       <h2 id="formTitle">Add Submission</h2>
@@ -38,6 +46,10 @@
 
     <section class="panel">
       <h2>Submissions</h2>
+      <div class="row">
+        <input id="searchInput" placeholder="Search name, email, phone, interest..." />
+        <button type="button" id="searchBtn">Search</button>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -56,9 +68,15 @@
         </table>
       </div>
       <p id="emptyState" class="empty hidden">No records found.</p>
+      <div class="row">
+        <button type="button" id="prevPageBtn">Previous</button>
+        <span id="pageInfo">Page 1</span>
+        <button type="button" id="nextPageBtn">Next</button>
+      </div>
     </section>
   </main>
 
   <script type="module" src="./main.js"></script>
 </body>
 </html>
+

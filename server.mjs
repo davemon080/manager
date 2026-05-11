@@ -14,6 +14,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+function isAuthorized(req) {
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith('Bearer ')) return false;
+  const token = authHeader.slice(7).trim();
+  return token.length > 0 && token === config.adminToken;
+}
+
+function requireAdmin(req, res, next) {
+  if (!isAuthorized(req)) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  next();
+}
+
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -41,26 +55,57 @@ function validateSubmission(input) {
   return null;
 }
 
-app.get('/api/submissions', async (req, res) => {
+app.get('/api/submissions', requireAdmin, async (req, res) => {
   const limitParam = Number.parseInt(req.query.limit, 10);
-  const limit = Number.isInteger(limitParam) ? Math.min(Math.max(limitParam, 1), 500) : 200;
+  const pageParam = Number.parseInt(req.query.page, 10);
+  const limit = Number.isInteger(limitParam) ? Math.min(Math.max(limitParam, 1), 100) : 20;
+  const page = Number.isInteger(pageParam) ? Math.max(pageParam, 1) : 1;
+  const offset = (page - 1) * limit;
+  const search = String(req.query.search || '').trim();
+
   try {
-    const result = await pool.query(
-      `SELECT id, first_name, last_name, other_names, email, phone_number,
-              training_interest, learning_device, whatsapp_consent,
-              schedule_email_consent, submitted_at
-       FROM onboarding_submissions
-       ORDER BY submitted_at DESC
-       LIMIT $1`,
-      [limit]
-    );
-    res.json({ success: true, submissions: result.rows });
+    const hasSearch = search.length > 0;
+    let countQuery = 'SELECT COUNT(*)::int AS total FROM onboarding_submissions';
+    let listQuery = `SELECT id, first_name, last_name, other_names, email, phone_number,
+                            training_interest, learning_device, whatsapp_consent,
+                            schedule_email_consent, submitted_at
+                     FROM onboarding_submissions`;
+    let params = [];
+
+    if (hasSearch) {
+      countQuery += ` WHERE first_name ILIKE $1 OR last_name ILIKE $1 OR other_names ILIKE $1
+                      OR email ILIKE $1 OR phone_number ILIKE $1 OR training_interest ILIKE $1
+                      OR learning_device ILIKE $1`;
+      listQuery += ` WHERE first_name ILIKE $1 OR last_name ILIKE $1 OR other_names ILIKE $1
+                     OR email ILIKE $1 OR phone_number ILIKE $1 OR training_interest ILIKE $1
+                     OR learning_device ILIKE $1`;
+      params = [`%${search}%`];
+    }
+
+    listQuery += ' ORDER BY submitted_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+    const listParams = [...params, limit, offset];
+
+    const [countResult, listResult] = await Promise.all([
+      pool.query(countQuery, params),
+      pool.query(listQuery, listParams)
+    ]);
+
+    res.json({
+      success: true,
+      submissions: listResult.rows,
+      pagination: {
+        page,
+        limit,
+        total: countResult.rows[0]?.total ?? 0,
+        totalPages: Math.max(1, Math.ceil((countResult.rows[0]?.total ?? 0) / limit))
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to read submissions' });
   }
 });
 
-app.post('/api/submissions', async (req, res) => {
+app.post('/api/submissions', requireAdmin, async (req, res) => {
   const payload = req.body ?? {};
   const validationError = validateSubmission(payload);
   if (validationError) {
@@ -92,7 +137,7 @@ app.post('/api/submissions', async (req, res) => {
   }
 });
 
-app.put('/api/submissions/:id', async (req, res) => {
+app.put('/api/submissions/:id', requireAdmin, async (req, res) => {
   const id = Number.parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) {
     return res.status(400).json({ success: false, error: 'Invalid id' });
@@ -134,7 +179,7 @@ app.put('/api/submissions/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/submissions/:id', async (req, res) => {
+app.delete('/api/submissions/:id', requireAdmin, async (req, res) => {
   const id = Number.parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) {
     return res.status(400).json({ success: false, error: 'Invalid id' });
